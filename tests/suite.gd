@@ -80,7 +80,9 @@ static func bot_play(sim: Sim, every: int = 30, limit: int = 20000) -> void:
 			for e: Dictionary in sim.enemies:
 				if int(e["mark"]) > 0:
 					continue
-				var d: float = (e["x"] - sim.px) ** 2 + (e["y"] - sim.py) ** 2
+				var dx: float = e["x"] - sim.px
+				var dy: float = e["y"] - sim.py
+				var d := dx * dx + dy * dy  # 四則だけ(決定性の固定値を、平方根と四則だけに頼らせる)
 				if d < bd:
 					bd = d
 					best = e

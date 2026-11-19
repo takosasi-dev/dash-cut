@@ -50,29 +50,14 @@ func _enemy(e: Dictionary, me: Vector2, targeted: bool) -> void:
 		# 出る場所に縮む輪(60 tick)と、薄い形
 		var t := float(mark) / B.SPAWN_MARK_TICKS
 		draw_arc(p, r + 6.0 + 40.0 * t, 0.0, TAU, 32, Color(c, 0.9 - 0.5 * t), 2.0, true)
-		_shape(kind, p, r, Color(c, 0.25), me)
+		Kit.draw_shape(self, kind, p, r, Color(c, 0.25), me)
 		return
-	_shape(kind, p, r, c, me)
+	Kit.draw_shape(self, kind, p, r, c, me)
 	var warn := kind == F.SHOOTER and int(e["t"]) % B.SHOOTER_PERIOD_TICKS >= B.SHOOTER_PERIOD_TICKS - B.SHOOTER_WARN_TICKS
 	if warn:
 		draw_rect(Rect2(p - Vector2(r, r), Vector2(r, r) * 2.0), Kit.C_LINE, false, 4.0)
 	if targeted:
 		draw_arc(p, r + 6.0, 0.0, TAU, 32, Kit.C_LINE, 3.0, true)
-
-
-func _shape(kind: int, p: Vector2, r: float, c: Color, me: Vector2) -> void:
-	match kind:
-		F.STILL:
-			draw_circle(p, r, c)
-		F.CHASER:
-			# 半径 r の円に内接する三角。自分の方を向く
-			var d := (me - p).normalized()
-			if d == Vector2.ZERO:
-				d = Vector2.UP
-			var s := Vector2(-d.y, d.x)
-			draw_colored_polygon(PackedVector2Array([p + d * r, p + (-d * 0.5 + s * 0.866) * r, p + (-d * 0.5 - s * 0.866) * r]), c)
-		F.SHOOTER:
-			draw_rect(Rect2(p - Vector2(r, r), Vector2(r, r) * 2.0), c)
 
 
 # 体力の丸(右上)と回数の四角(下の中央)。

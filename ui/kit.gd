@@ -2,6 +2,8 @@
 # 文言は持たない。各画面は文言を core/strings.gd から渡す。
 extends RefCounted
 
+const F := preload("res://core/formations.gd")
+
 const SANS := "res://assets/fonts/NotoSansJP-Subset.ttf"
 
 const C_BG := Color("0E1116")
@@ -89,3 +91,19 @@ static func place(c: Control, x: float, y: float, w: float, h: float) -> Control
 	if c is Button:
 		c.custom_minimum_size = Vector2(w, h)
 	return c
+
+
+# 敵の形(止まる = 丸、追う = 自分の方を向く三角、撃つ = 四角)。
+static func draw_shape(ci: CanvasItem, kind: int, p: Vector2, r: float, c: Color, me: Vector2) -> void:
+	match kind:
+		F.STILL:
+			ci.draw_circle(p, r, c)
+		F.CHASER:
+			# 半径 r の円に内接する三角。自分の方を向く
+			var d := (me - p).normalized()
+			if d == Vector2.ZERO:
+				d = Vector2.UP
+			var s := Vector2(-d.y, d.x)
+			ci.draw_colored_polygon(PackedVector2Array([p + d * r, p + (-d * 0.5 + s * 0.866) * r, p + (-d * 0.5 - s * 0.866) * r]), c)
+		F.SHOOTER:
+			ci.draw_rect(Rect2(p - Vector2(r, r), Vector2(r, r) * 2.0), c)

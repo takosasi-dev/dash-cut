@@ -70,6 +70,8 @@ func test_inv4_preview_matches_real_for_still() -> bool:
 
 func test_ac3_t1_upward() -> bool:
 	var sim := Sim.new(1)
+	# T1 の (360, 800) は開始位置 (360, 900) から 100 px なので、INV-10 で点対称の (360, 560) に出る。上向きの突進(終点 580)で 3 体とも斬れる
+	eq(sim.enemies.map(func(e: Dictionary) -> Array: return [e["x"], e["y"]]), [[360.0, 560.0], [360.0, 700.0], [360.0, 600.0]], "T1 の出る位置")
 	wait_marks(sim)
 	var ev := dash(sim, 0, -100)
 	eq(of_type(ev, "cut_mark").size(), 3, "3 体斬れる")
@@ -515,6 +517,9 @@ func test_second_formation_after_t1_cleared() -> bool:
 		if sim.spawned == 2 and spawned_at < 0:
 			spawned_at = sim.tick
 	ok(spawned_at > 0 and spawned_at == third_cut, "T1 の 3 体目を斬った tick に 2 番目(%d, %d)" % [spawned_at, third_cut])
+	var t2: Array = sim.enemies.filter(func(e: Dictionary) -> bool: return int(e["mark"]) > 0).map(func(e: Dictionary) -> Array: return [e["x"], e["y"]])
+	# T2 の (360, 480) は、T1 を上向きに斬り終えた位置 (360, 580) から 100 px なので、INV-10 で点対称の (360, 880) に出る(仕様の食い違い。報告済み)
+	eq(t2, [[360.0, 880.0], [360.0, 400.0], [360.0, 320.0], [460.0, 260.0], [540.0, 260.0], [620.0, 260.0]], "T2 の出る位置")
 	return true
 
 
@@ -551,7 +556,9 @@ func test_inv10_spawn_keeps_distance() -> bool:
 			for ev: Dictionary in sim.events():
 				if ev["type"] == "spawn_mark":
 					spawns += 1
-					if (ev["x"] - sim.px) ** 2 + (ev["y"] - sim.py) ** 2 < 120.0 * 120.0:
+					var dx: float = ev["x"] - sim.px
+					var dy: float = ev["y"] - sim.py
+					if dx * dx + dy * dy < 120.0 * 120.0:
 						close += 1
 			t += 1
 	ok(spawns > 100, "並びが出続ける(%d 体)" % spawns)

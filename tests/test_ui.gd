@@ -302,3 +302,62 @@ func test_result_best_diff() -> bool:
 	eq(m.current._copied.text, S.COPIED, "コピーの後の 1 行")
 	_done(m)
 	return true
+
+
+func test_e8_frame_step_cap() -> bool:
+	var m := _main()
+	click(m, "practice")
+	var t: int = m.play.sim.tick
+	frames(m, 1, 1.0)
+	eq(m.play.sim.tick - t, B.MAX_STEPS_PER_FRAME, "1 秒遅れたフレームでも 8 tick だけ進める")
+	frames(m, 1)
+	eq(m.play.sim.tick - t, B.MAX_STEPS_PER_FRAME + 2, "超えた分は捨てる")
+	_done(m)
+	return true
+
+
+# 窓なしでは frame_post_draw が来ないので、Web で毎フレーム走る測りと状態の窓口をここで回す。
+func test_after_draw_and_state() -> bool:
+	var m := _main()
+	m._after_draw()
+	var st: Dictionary = m.state()
+	ok(st["buttons"].has("daily") and st["buttons"].has("practice"), "タイトルのボタンの位置")
+	click(m, "daily")
+	frames(m, 31)
+	swipe(m, Vector2(300, 1000), Vector2(300, 900))
+	frames(m, 1)
+	m._after_draw()
+	eq(m.lat_ms.size(), 1, "指示から動き出しを描くまでを 1 回数える")
+	m._after_draw()
+	eq(m.lat_ms.size(), 1, "同じ突進は 2 回数えない")
+	st = m.state()
+	ok(st["play"]["tick"] > 0 and st["buttons"].has("pause"), "プレイの状態")
+	m._input(kev(KEY_ESCAPE))
+	m._after_draw()
+	st = m.state()
+	ok(st["paused"] and st["buttons"].has("resume") and not st["buttons"].has("pause"), "一時停止の状態")
+	ok(m._pct([3.0, 1.0, 2.0])["p50"] == 2.0, "中央値")
+	_done(m)
+	return true
+
+
+# ビューポートを通した入力(GUI のボタンと、場を払う _unhandled_input の振り分け)。
+func test_input_routing_through_viewport() -> bool:
+	var m := _main()
+	click(m, "daily")
+	var vp := m.get_viewport()
+	var xf := vp.get_final_transform()  # 画面(720×1280)の位置 → 窓の位置
+	frames(m, 31)
+	vp.push_input(mouse(true, xf * Vector2(300, 1000)))
+	var mv := InputEventMouseMotion.new()
+	mv.position = xf * Vector2(300, 900)
+	vp.push_input(mv)
+	vp.push_input(mouse(false, xf * Vector2(300, 900)))
+	eq(m.play.sim.pending, [0, -100], "場を払うと突進の指示")
+	m.play.sim.pending = null
+	vp.push_input(mouse(true, xf * Vector2(68, 68)))
+	vp.push_input(mouse(false, xf * Vector2(68, 68)))
+	ok(m.play.sim.pending == null, "一時停止のボタンを押した操作は突進にしない")
+	ok(m.pause_view != null, "一時停止のボタンで一時停止")
+	_done(m)
+	return true

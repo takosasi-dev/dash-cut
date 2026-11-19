@@ -77,7 +77,7 @@ func draw_world(ci: CanvasItem, now: int, px: float, py: float) -> void:
 	for c: Dictionary in corpses:
 		var p := Vector2(c["x"], c["y"])
 		var r: float = c["r"]
-		ci.draw_circle(p, r, Color(Kit.kind_color(c["kind"]), 0.5))
+		Kit.draw_shape(ci, c["kind"], p, r, Kit.kind_color(c["kind"]), Vector2(px, py))  # 止まった絵のまま残す
 		ci.draw_line(p + Vector2(-r - 6, r + 6), p + Vector2(r + 6, -r - 6), Kit.C_LINE, 4.0, true)
 	for s: Dictionary in shards:
 		var t := float(now - int(s["at"])) / B.SHARD_MS
