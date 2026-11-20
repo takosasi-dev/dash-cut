@@ -41,7 +41,7 @@ func _load() -> void:
 	var now := Time.get_ticks_msec()
 	while fx.shards.size() < 240:
 		var i: int = fx.shards.size()
-		fx.shards.append({"x": 360.0, "y": 640.0, "vx": (i % 20 - 10) * 20.0, "vy": (i / 20 - 6) * 30.0, "at": now, "color": Kit.C_STILL})
+		fx.shards.append({"x": 360.0, "y": 640.0, "vx": (i % 20 - 10) * 20.0, "vy": (i / 20 - 6) * 30.0, "at": now, "color": Kit.C_STILL, "size": 13.0, "rot": 0.0, "spin": 9.0})
 	if frames % 30 == 0:
 		main.play.sim.queue_dash(1, -1 if frames % 60 == 0 else 1)  # 狙いの線と突進の分も入れる
 

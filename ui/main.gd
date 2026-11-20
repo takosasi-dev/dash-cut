@@ -43,16 +43,25 @@ func _ready() -> void:
 	var bg := ColorRect.new()
 	bg.color = Kit.C_BG
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.add_child(Kit.place(bg, -2000, -2000, B.SCREEN_W + 4000, B.SCREEN_H + 4000))
+	stage.add_child(Kit.place(bg, -4000, -4000, B.SCREEN_W + 8000, B.SCREEN_H + 8000))
 	store = Store.new()
 	Sfx.set_volume(int(store.settings()["volume"]))
 	debug = _flag("debug")
 	auto = OS.get_cmdline_user_args().has("--auto")
 	_watch_visibility()
+	get_viewport().size_changed.connect(_center)
+	_center()
 	RenderingServer.frame_post_draw.connect(_after_draw)
 	_show_title()
 	if auto:
 		_on_title("daily")
+
+
+# 縦横比が 9:16 でない窓では、720×1280 を真ん中に置き、余りは背景の色で埋める(E-17)。
+# project.godot の aspect は expand(keep だと余りが黒く塗られる)。
+func _center() -> void:
+	var r := get_viewport().get_visible_rect()
+	stage.position = (r.position + (r.size - Vector2(B.SCREEN_W, B.SCREEN_H)) / 2.0).round()
 
 
 static func _flag(flag: String) -> bool:
@@ -213,7 +222,7 @@ func _show_settings(from: String) -> void:
 		pause_view.visible = false
 		var dim := ColorRect.new()
 		dim.color = Color(Kit.C_BG, 0.97)
-		s.add_child(Kit.place(dim, -1000, -1000, B.SCREEN_W + 2000, B.SCREEN_H + 2000))
+		s.add_child(Kit.place(dim, -4000, -4000, B.SCREEN_W + 8000, B.SCREEN_H + 8000))
 		s.move_child(dim, 0)
 		stage.add_child(s)
 		_settings_overlay = s
@@ -265,11 +274,14 @@ func state() -> Dictionary:
 		for b in root.find_children("*", "Button", true, false):
 			var btn := b as Button
 			if btn.is_visible_in_tree() and not btn.disabled:
-				out["buttons"][String(btn.name)] = [btn.global_position.x + btn.size.x / 2, btn.global_position.y + btn.size.y / 2]
+				var c := btn.global_position - stage.global_position + btn.size / 2  # 720×1280 の中の位置
+				out["buttons"][String(btn.name)] = [c.x, c.y]
 	if play != null and play.sim != null:
 		var s := play.sim.snapshot()
 		out["play"] = {"x": s["x"], "y": s["y"], "tick": s["tick"], "time_left": s["time_left"], "points": s["points"],
-			"charges": s["charges"], "hp": s["hp"], "enemies": s["enemies"].size(), "bullets": s["bullets"].size(), "pos": [play.position.x, play.position.y]}
+			"charges": s["charges"], "hp": s["hp"], "enemies": s["enemies"].size(), "bullets": s["bullets"].size(), "pos": [play.position.x, play.position.y],
+			"chain": s["chain"], "dashing": s["dashing"], "freeze": s["freeze_left"], "clock": s["clock_running"],
+			"foes": s["enemies"].map(func(e: Dictionary) -> Array: return [roundi(e["x"]), roundi(e["y"]), int(e["kind"]), int(e["mark"])])}
 	return out
 
 

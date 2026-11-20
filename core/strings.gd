@@ -3,7 +3,7 @@
 extends RefCounted
 
 const NAME := "DashCut"
-const VERSION := "v0.1.2"
+const VERSION := "v0.2.0"
 const URL := "https://takosasi-dev.github.io/dash-cut/"
 
 # S1 タイトル
@@ -19,6 +19,7 @@ const LOAD_FAILED := "保存を読めなかったので、記録を初めから�
 
 # S2 プレイ
 const HINT := "払うと突進"
+const HINT_KEYS := "キーボードなら 矢印で向き、スペースで突進"
 const HUD_TIME := "残り %s"
 const HUD_HP := "体力"
 const HUD_POINTS := "%s点"

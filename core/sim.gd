@@ -349,7 +349,7 @@ func _finish(why: String) -> void:
 # 描画用(読むだけ。敵と弾の配列は中身をそのまま渡す)。
 func snapshot() -> Dictionary:
 	return {"x": px, "y": py, "face_x": face_x, "face_y": face_y, "charges": charges, "regen": regen, "hp": hp,
-		"hurt_left": hurt_left, "time_left": time_left, "clock_running": clock_running, "points": points, "chain": chain,
+		"hurt_left": hurt_left, "time_left": time_left, "clock_running": clock_running, "points": points, "chain": chain, "chain_idle": chain_idle,
 		"freeze_left": freeze_left, "dashing": dash_left > 0, "enemies": enemies, "bullets": bullets, "tick": tick, "cuts": cuts}
 
 

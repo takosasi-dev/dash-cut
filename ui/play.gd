@@ -50,9 +50,12 @@ func _ready() -> void:
 	_l["hp"] = Kit.place(Kit.label(S.HUD_HP, 22, Kit.C_DIM, 500), 500, 48, 80, 40)
 	_l["points"] = Kit.place(Kit.label("", 34, Kit.C_TEXT, 800), 24, 130, 340, 56)
 	_l["points"].horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_l["points"].pivot_offset = Vector2(0, 28)  # 点が入った時に跳ねる中心
 	_l["chain"] = Kit.place(Kit.label("", 30, Kit.C_TEXT, 700), 360, 130, 336, 56)
 	_l["chain"].horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_l["hint"] = Kit.place(Kit.label(S.HINT, 36, Color(Kit.C_TEXT, 0.75), 700), 0, 1060, B.SCREEN_W, 60)
+	_l["chain"].pivot_offset = Vector2(336, 28)
+	_l["hint"] = Kit.place(Kit.label(S.HINT, 36, Color(Kit.C_TEXT, 0.75), 700), 0, 1050, B.SCREEN_W, 60)
+	_l["keys"] = Kit.place(Kit.label(S.HINT_KEYS, 22, Kit.C_DIM, 500), 0, 1106, B.SCREEN_W, 36)
 	_l["charge"] = Kit.place(Kit.label(S.HUD_CHARGE, 26, Kit.C_DIM, 500), 200, 1200, 100, 44)
 	for k: String in _l:
 		add_child(_l[k])
@@ -233,14 +236,31 @@ func _refresh() -> void:
 	var running: bool = s["clock_running"]
 	var tl: Label = _l["time"]
 	tl.text = S.HUD_TIME % Score.sec1(t)
-	tl.add_theme_color_override("font_color", Kit.C_TEXT if running else Color(Kit.C_DIM, 0.6))
-	tl.add_theme_font_size_override("font_size", int(44 * (B.CLOCK_BIG if t <= B.CLOCK_BIG_SEC * B.TICK_HZ else 1.0)))
+	var last := t <= B.CLOCK_BIG_SEC * B.TICK_HZ
+	tl.add_theme_color_override("font_color", (Kit.C_DANGER if last else Kit.C_TEXT) if running else Color(Kit.C_DIM, 0.6))
+	tl.add_theme_font_size_override("font_size", int(44 * (B.CLOCK_BIG if last else 1.0)))
 	_l["points"].text = S.HUD_POINTS % Score.comma(int(s["points"]))
+	_l["points"].scale = Vector2.ONE * Fx.bump(now, fx.points_bump_at)
 	var chain: int = s["chain"]
+	fx.on_chain(chain, now)
 	_l["chain"].text = S.HUD_CHAIN % [chain, Score.mult_text(Score.mult10(chain))] if chain > 0 else ""
+	_l["chain"].scale = Vector2.ONE * Fx.bump(now, fx.chain_bump_at)
 	_l["hint"].visible = not running
+	_l["keys"].visible = not running
 	var a := aim_vec()
 	field.aim = {} if a == Vector2i.ZERO or not is_playing() or paused else Geom.preview(s["x"], s["y"], a.x, a.y, s["enemies"])
+	field.guide = _guide_target(s) if int(s["cuts"]) == 0 and not running else Vector2.INF
 	field.snap = s
 	field.now = now
 	field.queue_redraw()
+
+
+# 最初に斬るまで矢印で指す先: 印の明けた一番近い敵(見せるだけ。判定はしない)。いなければ INF。
+static func _guide_target(s: Dictionary) -> Vector2:
+	var me := Vector2(s["x"], s["y"])
+	var best := Vector2.INF
+	for e: Dictionary in s["enemies"]:
+		var p := Vector2(e["x"], e["y"])
+		if int(e["mark"]) == 0 and (best == Vector2.INF or me.distance_squared_to(p) < me.distance_squared_to(best)):
+			best = p
+	return best

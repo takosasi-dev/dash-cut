@@ -355,8 +355,8 @@ func test_input_routing_through_viewport() -> bool:
 	vp.push_input(mouse(false, xf * Vector2(300, 900)))
 	eq(m.play.sim.pending, [0, -100], "場を払うと突進の指示")
 	m.play.sim.pending = null
-	vp.push_input(mouse(true, xf * Vector2(68, 68)))
-	vp.push_input(mouse(false, xf * Vector2(68, 68)))
+	vp.push_input(mouse(true, xf * (m.stage.position + Vector2(68, 68))))  # 画面は窓の真ん中に置く(E-17)
+	vp.push_input(mouse(false, xf * (m.stage.position + Vector2(68, 68))))
 	ok(m.play.sim.pending == null, "一時停止のボタンを押した操作は突進にしない")
 	ok(m.pause_view != null, "一時停止のボタンで一時停止")
 	_done(m)

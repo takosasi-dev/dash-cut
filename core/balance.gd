@@ -71,7 +71,7 @@ const RETRY_LOCK_MS := 300
 const TRAIL_MS := 120
 const SHARD_MS := 300
 const SHARDS_PER_ENEMY := 6
-const SHARD_SPEED := 260.0  # px/秒
+const SHARD_SPEED := 460.0  # px/秒(v0.2.0 で 260 から。破片が輪の内に留まって見えなかった)
 const POPUP_MS := 600
 const POPUP_RISE := 40.0
 const POPUP_BIG := 1.6
@@ -88,6 +88,23 @@ const NO_CHARGE_MS := 200
 const CLOCK_BIG_SEC := 10  # 残りがこの秒数から字を大きく
 const CLOCK_BIG := 1.3
 const SEMITONE_CAP := 12
+# 磨きで足した演出(v0.2.0。仕様書 §14「磨きで足した物」)。ms
+const CUT_GROW_MS := 60  # 斬った線が伸びきるまで
+const RING_MS := 220  # 割れた所に広がる輪
+const RING_GROW := 26.0  # 輪が広がる幅(px)。3 体以上は RING_GROW_BIG
+const RING_GROW_BIG := 46.0
+const FLASH_MS := 120  # 3 体以上の時、場が白く光る
+const FLASH_ALPHA := 0.22
+const FLASH_ALPHA_REDUCED := 0.08  # 点滅を弱める時(画面全体の色の変化は 20% 以下)
+const POP_IN_MS := 90  # 点の表示が大きく出て縮む
+const POP_IN_SCALE := 0.35
+const POPUP_GAP := 46.0  # 点の表示どうしを上へずらす幅
+const BUMP_MS := 160  # 点・つなぎの字が跳ねる
+const BUMP_SCALE := 0.18
+const CHAIN_LOST_MS := 600  # 切れたつなぎを赤く残す
+const REFILL_MS := 280  # 斬って戻った回数の四角が光る
+const HP_LOST_MS := 320  # 消えた体力の丸が弾ける
+const GUIDE_MS := 900  # 最初の突進の前に出す矢印の 1 周
 
 # 設定(FR-23)
 const VOLUMES := [0, 25, 50, 75, 100]

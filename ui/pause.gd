@@ -12,7 +12,7 @@ func build() -> void:
 	size = Vector2(B.SCREEN_W, B.SCREEN_H)
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.72)
-	add_child(Kit.place(dim, -1000, -1000, B.SCREEN_W + 2000, B.SCREEN_H + 2000))  # 下のプレイ画面の操作を止める
+	add_child(Kit.place(dim, -4000, -4000, B.SCREEN_W + 8000, B.SCREEN_H + 8000))  # 下のプレイ画面の操作を止める
 	add_child(Kit.place(Kit.label(S.PAUSE, 48, Kit.C_TEXT, 800), 0, 260, B.SCREEN_W, 80))
 	var y := 400.0
 	for pair: Array in [["resume", S.B_RESUME], ["restart", S.B_RESTART], ["settings", S.B_SETTINGS], ["title", S.B_TITLE]]:
