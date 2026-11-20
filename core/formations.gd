@@ -1,5 +1,6 @@
 # 敵の並び 24 個(手で作ったデータ)と、出す順の作り方(仕様書 §9.6)。
 # 教える並び T1〜T4 の中身と出る位置(1・2・6・12 番目)は変えない(INV-9)。順は種だけで決まる(INV-3)。
+# T1・T2 の座標は 2026-11-20 に依頼者の判断で後ろ(上)へずらした。出す時の自機から 120 px 以上(INV-10)で、点対称へ移さずに出る。
 extends RefCounted
 
 const B := preload("res://core/balance.gd")
@@ -11,8 +12,8 @@ const SHOOTER := 2
 
 # [id, tier, teach, [[kind, x, y], ...]]
 const DATA := [
-	["T1", 1, true, [[STILL, 360, 800], [STILL, 360, 700], [STILL, 360, 600]]],
-	["T2", 1, true, [[STILL, 360, 480], [STILL, 360, 400], [STILL, 360, 320], [STILL, 460, 260], [STILL, 540, 260], [STILL, 620, 260]]],
+	["T1", 1, true, [[STILL, 360, 770], [STILL, 360, 680], [STILL, 360, 590]]],
+	["T2", 1, true, [[STILL, 360, 450], [STILL, 360, 370], [STILL, 360, 290], [STILL, 460, 260], [STILL, 540, 260], [STILL, 620, 260]]],
 	["A1", 1, false, [[STILL, 200, 400], [STILL, 300, 500], [STILL, 400, 600], [STILL, 500, 700]]],
 	["A2", 1, false, [[STILL, 160, 500], [STILL, 260, 500], [STILL, 360, 500], [STILL, 460, 500], [STILL, 560, 500]]],
 	["A3", 1, false, [[STILL, 200, 350], [STILL, 280, 450], [STILL, 360, 550], [STILL, 440, 450], [STILL, 520, 350]]],

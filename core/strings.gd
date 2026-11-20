@@ -3,7 +3,7 @@
 extends RefCounted
 
 const NAME := "DashCut"
-const VERSION := "v0.1.0"
+const VERSION := "v0.1.1"
 const URL := "https://takosasi-dev.github.io/dash-cut/"
 
 # S1 タイトル

@@ -70,8 +70,7 @@ func test_inv4_preview_matches_real_for_still() -> bool:
 
 func test_ac3_t1_upward() -> bool:
 	var sim := Sim.new(1)
-	# T1 の (360, 800) は開始位置 (360, 900) から 100 px なので、INV-10 で点対称の (360, 560) に出る。上向きの突進(終点 580)で 3 体とも斬れる
-	eq(sim.enemies.map(func(e: Dictionary) -> Array: return [e["x"], e["y"]]), [[360.0, 560.0], [360.0, 700.0], [360.0, 600.0]], "T1 の出る位置")
+	eq(sim.enemies.map(func(e: Dictionary) -> Array: return [e["x"], e["y"]]), [[360.0, 770.0], [360.0, 680.0], [360.0, 590.0]], "T1 は表の位置のまま出る(INV-10 で移さない)")
 	wait_marks(sim)
 	var ev := dash(sim, 0, -100)
 	eq(of_type(ev, "cut_mark").size(), 3, "3 体斬れる")
@@ -518,8 +517,12 @@ func test_second_formation_after_t1_cleared() -> bool:
 			spawned_at = sim.tick
 	ok(spawned_at > 0 and spawned_at == third_cut, "T1 の 3 体目を斬った tick に 2 番目(%d, %d)" % [spawned_at, third_cut])
 	var t2: Array = sim.enemies.filter(func(e: Dictionary) -> bool: return int(e["mark"]) > 0).map(func(e: Dictionary) -> Array: return [e["x"], e["y"]])
-	# T2 の (360, 480) は、T1 を上向きに斬り終えた位置 (360, 580) から 100 px なので、INV-10 で点対称の (360, 880) に出る(仕様の食い違い。報告済み)
-	eq(t2, [[360.0, 880.0], [360.0, 400.0], [360.0, 320.0], [460.0, 260.0], [540.0, 260.0], [620.0, 260.0]], "T2 の出る位置")
+	var want: Array = F.get_formation("T2")["members"].map(func(m: Dictionary) -> Array: return [m["x"], m["y"]])
+	eq(t2, want, "T2 は表の位置のまま出る(INV-9・INV-10)")
+	# 教える中身: 上向きで縦の 3 体、続けて右向きで横の 3 体
+	run(sim, B.SPAWN_MARK_TICKS)
+	eq(of_type(dash(sim, 0, -100), "cut_mark").size(), 3, "T2 の縦の列は上向き 1 回で 3 体")
+	eq(of_type(dash(sim, 100, 0), "cut_mark").size(), 3, "続けて右向きで横の 3 体")
 	return true
 
 
@@ -615,7 +618,7 @@ func test_golden_full_run() -> bool:
 	eq([r["points"], r["cuts"], r["max_n"], r["max_chain"], r["reason"], r["ticks"]], GOLDEN, "固定の入力の結果")
 	return true
 
-const GOLDEN := [25920, 178, 3, 9, "hp", 6493]
+const GOLDEN := [30310, 197, 3, 10, "hp", 6882]
 
 
 func test_ac23_core_is_pure() -> bool:
@@ -648,3 +651,59 @@ func test_ac24_no_text_outside_strings() -> bool:
 					bad.append("%s/%s:%d" % [dir, f, k + 1])
 	eq(bad, [], "文言は strings.gd だけ")
 	return true
+
+
+# INV-9 と INV-10 の食い違いの検査(2026-11-20)。24 個全部について、前の並びを斬り終えた位置から出した時に、
+# 点対称へ移す・出さない member が出るかを数える。前の並びは「印の明けた一番近い敵へ突進する bot」で斬り終える(種 60 個ぶん)。
+# T1・T2 は前の並びが決まっている(開始時と、T1 を上向きに斬り終えた時)ので 0 回であること。
+# T3・T4 は前が乱数で選ぶ並びで、自機がどこにいても出るので、座標を動かしても 0 にはできない(2026-11-20 に数えて報告。仕様の決めが要る)。
+# ほかの並びは INV-10 で移してよい(INV-9 の対象でない)ので、回数を出すだけ。
+func test_inv9_inv10_no_relocation_for_teach() -> bool:
+	var moved := {}
+	var shown := {}
+	for s in range(1, 61):
+		var sim := Sim.new(Day.day_seed(s))
+		_count_spawn(sim, sim.events(), 0, moved, shown)
+		var t := 0
+		while not sim.is_over() and t < 9000:
+			if sim.dash_left == 0 and sim.freeze_left == 0 and sim.charges > 0 and t % 20 == 0:
+				var best: Variant = null
+				var bd := 1e18
+				for e: Dictionary in sim.enemies:
+					if int(e["mark"]) > 0:
+						continue
+					var dx: float = e["x"] - sim.px
+					var dy: float = e["y"] - sim.py
+					if dx * dx + dy * dy < bd:
+						bd = dx * dx + dy * dy
+						best = e
+				if best != null:
+					sim.queue_dash(roundi(best["x"] - sim.px), roundi(best["y"] - sim.py))
+			var before := sim.spawned
+			sim.step()
+			if sim.spawned > before:
+				_count_spawn(sim, sim.events(), before, moved, shown)
+			t += 1
+	var ids: Array = shown.keys()
+	ids.sort()
+	print("      並びごとの 出した回数 / 移した・出さなかった member の数: ", ", ".join(ids.map(func(id: String) -> String: return "%s %d/%d" % [id, shown[id], moved.get(id, 0)])))
+	for id: String in ["T1", "T2"]:
+		eq(shown.get(id, 0), 60, "%s を種ごとに 1 回出した" % id)
+		eq(moved.get(id, 0), 0, "%s は表の位置のまま出る" % id)
+	eq(shown.size(), 24, "24 個全部が出た")
+	return true
+
+
+func _count_spawn(sim: Sim, ev: Array, idx: int, moved: Dictionary, shown: Dictionary) -> void:
+	if idx >= B.ORDER_LEN:
+		idx = B.ORDER_LOOP_FROM + (idx - B.ORDER_LEN) % (B.ORDER_LEN - B.ORDER_LOOP_FROM)
+	var o: Dictionary = sim.order[idx]
+	var want: Array = F.get_formation(o["id"])["members"].map(func(m: Dictionary) -> Array:
+		return [B.FIELD_X1 - m["x"] if o["flip"] else m["x"], m["y"]])
+	var got: Array = of_type(ev, "spawn_mark").map(func(e: Dictionary) -> Array: return [e["x"], e["y"]])
+	var n := 0
+	for w: Array in want:
+		if not got.has(w):
+			n += 1
+	shown[o["id"]] = shown.get(o["id"], 0) + 1
+	moved[o["id"]] = moved.get(o["id"], 0) + n
