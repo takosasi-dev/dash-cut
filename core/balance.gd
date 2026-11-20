@@ -48,6 +48,7 @@ const ORDER_LEN := 60
 const ORDER_LOOP_FROM := 12  # 60 番目の次は 13 番目(0 から数えて 12)
 const FIELD_MARGIN := 40.0  # 並びの member を置ける、端からの距離
 const LINE_MIN_CUTS := 3  # 1 本の線で斬れるはずの数
+const TEACH_WAIT_MAX_TICKS := 600  # 教える並びを自機が離れるまで待つ上限(5 秒。仮の値)。超えたらほかの並びと同じ扱いで出す
 
 # 敵と弾(§9.5)
 const STILL_RADIUS := 18.0

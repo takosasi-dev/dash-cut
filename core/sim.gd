@@ -54,7 +54,9 @@ var order: Array = []  # [{ id, flip }] 60 個
 var spawned := 0  # 出した並びの数
 var _since_spawn := 0
 var _low_armed := false  # 場の敵が SPAWN_WHEN_LEFT より多い時を見た(「2 体以下になった tick」を 1 回に数える)
-var _due := false  # 出すと決めたが、敵が多くて待っている
+var _due := false  # 出すと決めたが、敵が多い・自機が近いので待っている
+var _teach_wait := 0  # 教える並びを、自機が離れるまで待った tick
+var teach_waits: Array = []  # 出した教える並びごとの [id, 待った tick](テストと測りが読む)
 var _t1_ids: Array = []
 
 var over := false
@@ -286,16 +288,33 @@ func _tick_spawn() -> void:
 	elif (n <= B.SPAWN_WHEN_LEFT and _low_armed) or _since_spawn >= B.SPAWN_FORCE_TICKS:
 		_due = true
 	if _due and n < B.ENEMY_CAP:
+		# 教える並びは、全員が自機から 120 px 以上離れている tick まで待って出す(2026-11-20 の依頼者の判断)。
+		# 待ちが上限を超えたら、ほかの並びと同じ INV-10 の扱い(点対称へ・出さない)で出す
+		if _teach_blocked() and _teach_wait < B.TEACH_WAIT_MAX_TICKS:
+			_teach_wait += 1
+			return
 		_spawn_next()
+
+
+func _order_at(k: int) -> Dictionary:
+	if k >= B.ORDER_LEN:
+		k = B.ORDER_LOOP_FROM + (k - B.ORDER_LEN) % (B.ORDER_LEN - B.ORDER_LOOP_FROM)
+	return order[k]
+
+
+# 次に出すのが教える並びで、自機から 120 px 未満の member があれば真。
+func _teach_blocked() -> bool:
+	var f := F.get_formation(_order_at(spawned)["id"])
+	return f["teach"] and f["members"].any(func(m: Dictionary) -> bool: return _too_close(m["x"], m["y"]))
 
 
 # 出す順の次の並びを出す(印つき)。自分から近すぎる member は点対称の位置へ、それも近ければ出さない(INV-10)。
 func _spawn_next() -> void:
-	var idx := spawned
-	if idx >= B.ORDER_LEN:
-		idx = B.ORDER_LOOP_FROM + (idx - B.ORDER_LEN) % (B.ORDER_LEN - B.ORDER_LOOP_FROM)
-	var o: Dictionary = order[idx]
+	var o := _order_at(spawned)
 	var f := F.get_formation(o["id"])
+	if f["teach"]:
+		teach_waits.append([o["id"], _teach_wait])
+	_teach_wait = 0
 	for m: Dictionary in f["members"]:
 		var x: float = B.FIELD_X1 - m["x"] if o["flip"] else m["x"]
 		var y: float = m["y"]

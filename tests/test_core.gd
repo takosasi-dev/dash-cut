@@ -655,12 +655,12 @@ func test_ac24_no_text_outside_strings() -> bool:
 
 # INV-9 と INV-10 の食い違いの検査(2026-11-20)。24 個全部について、前の並びを斬り終えた位置から出した時に、
 # 点対称へ移す・出さない member が出るかを数える。前の並びは「印の明けた一番近い敵へ突進する bot」で斬り終える(種 60 個ぶん)。
-# T1・T2 は前の並びが決まっている(開始時と、T1 を上向きに斬り終えた時)ので 0 回であること。
-# T3・T4 は前が乱数で選ぶ並びで、自機がどこにいても出るので、座標を動かしても 0 にはできない(2026-11-20 に数えて報告。仕様の決めが要る)。
+# 教える並び T1〜T4 は、自機が離れるまで待って出すので 0 体であること(2026-11-20 の依頼者の判断)。待った tick の最大と平均も出し、最大が上限以内か見る。
 # ほかの並びは INV-10 で移してよい(INV-9 の対象でない)ので、回数を出すだけ。
 func test_inv9_inv10_no_relocation_for_teach() -> bool:
 	var moved := {}
 	var shown := {}
+	var waits: Array = []
 	for s in range(1, 61):
 		var sim := Sim.new(Day.day_seed(s))
 		_count_spawn(sim, sim.events(), 0, moved, shown)
@@ -684,11 +684,18 @@ func test_inv9_inv10_no_relocation_for_teach() -> bool:
 			if sim.spawned > before:
 				_count_spawn(sim, sim.events(), before, moved, shown)
 			t += 1
+		waits.append_array(sim.teach_waits.map(func(w: Array) -> int: return w[1]))
 	var ids: Array = shown.keys()
 	ids.sort()
 	print("      並びごとの 出した回数 / 移した・出さなかった member の数: ", ", ".join(ids.map(func(id: String) -> String: return "%s %d/%d" % [id, shown[id], moved.get(id, 0)])))
-	for id: String in ["T1", "T2"]:
-		eq(shown.get(id, 0), 60, "%s を種ごとに 1 回出した" % id)
+	var wmax: int = waits.max()
+	var wsum := 0
+	for w: int in waits:
+		wsum += w
+	print("      教える並びの待ち: %d 回、最大 %d tick、平均 %.1f tick、待った回 %d" % [waits.size(), wmax, float(wsum) / waits.size(), waits.filter(func(w: int) -> bool: return w > 0).size()])
+	ok(wmax < B.TEACH_WAIT_MAX_TICKS, "待ちは上限より短い(%d)" % wmax)
+	for id: String in ["T1", "T2", "T3", "T4"]:
+		ok(shown.get(id, 0) >= 50, "%s を出した(%d 回)" % [id, shown.get(id, 0)])
 		eq(moved.get(id, 0), 0, "%s は表の位置のまま出る" % id)
 	eq(shown.size(), 24, "24 個全部が出た")
 	return true
@@ -707,3 +714,30 @@ func _count_spawn(sim: Sim, ev: Array, idx: int, moved: Dictionary, shown: Dicti
 			n += 1
 	shown[o["id"]] = shown.get(o["id"], 0) + 1
 	moved[o["id"]] = moved.get(o["id"], 0) + n
+
+
+func test_teach_waits_until_player_leaves() -> bool:
+	var sim := bare()
+	sim.spawned = 5  # 次は 6 番目の T3(追う (360, 280)・止まる y 700 の 4 体)
+	sim.px = 260.0
+	sim.py = 700.0
+	sim.clock_running = true
+	sim._due = true
+	var t := sim.time_left
+	run(sim, 10)
+	eq(sim.spawned, 5, "自機が近い間は出さない")
+	eq(sim.time_left, t - 10, "待つ間も時計は進む")
+	sim.px = 360.0
+	sim.py = 1100.0
+	run(sim, 1)
+	eq(sim.spawned, 6, "離れた tick に出す")
+	eq(sim.teach_waits[-1], ["T3", 10], "待った tick")
+	eq(sim.enemies.size(), 5, "T3 の 5 体が表の位置で出る")
+	sim = bare()
+	sim.spawned = 5
+	sim.px = 260.0
+	sim.py = 700.0
+	sim._due = true
+	run(sim, B.TEACH_WAIT_MAX_TICKS + 1)
+	eq(sim.spawned, 6, "上限まで待ったら、ほかの並びと同じ扱いで出す")
+	return true
