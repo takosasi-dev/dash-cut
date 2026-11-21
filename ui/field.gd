@@ -59,6 +59,11 @@ func _bands() -> void:
 	draw_rect(Rect2(-wide, B.FIELD_Y1, B.SCREEN_W + wide * 2.0, wide), Kit.C_SUMI)
 	draw_line(Vector2(-wide, B.FIELD_Y0), Vector2(B.SCREEN_W + wide, B.FIELD_Y0), Kit.C_USU, 2.0)
 	draw_line(Vector2(-wide, B.FIELD_Y1), Vector2(B.SCREEN_W + wide, B.FIELD_Y1), Kit.C_USU, 2.0)
+	# 横に余りが出る窓では、場の左右も濃墨で塗って縦の罫を引く(場の端が見えないと、突進が見えない壁で止まる)
+	draw_rect(Rect2(B.FIELD_X0 - wide, B.FIELD_Y0, wide, B.FIELD_Y1 - B.FIELD_Y0), Kit.C_SUMI)
+	draw_rect(Rect2(B.FIELD_X1, B.FIELD_Y0, wide, B.FIELD_Y1 - B.FIELD_Y0), Kit.C_SUMI)
+	draw_line(Vector2(B.FIELD_X0, B.FIELD_Y0), Vector2(B.FIELD_X0, B.FIELD_Y1), Kit.C_USU, 2.0)
+	draw_line(Vector2(B.FIELD_X1, B.FIELD_Y0), Vector2(B.FIELD_X1, B.FIELD_Y1), Kit.C_USU, 2.0)
 	var r := Rect2(B.FIELD_X0, B.FIELD_Y0, B.FIELD_X1 - B.FIELD_X0, B.FIELD_Y1 - B.FIELD_Y0).grow(-6.0)
 	var c := Color(Kit.C_WASHI, 0.35)
 	var k := 26.0

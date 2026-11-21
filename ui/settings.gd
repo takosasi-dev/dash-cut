@@ -47,7 +47,7 @@ func build(p_store: RefCounted) -> void:
 	list.append_array(_shake)
 	list.append_array(_flash)
 	list.append(ret)
-	menu = Menu.new(list, B.VOLUMES.find(int(store.settings()["volume"])))
+	menu = Menu.new(list, B.VOLUMES.find(int(store.settings()["volume"])), _vol)
 
 
 func _caption(text: String, y: float) -> void:

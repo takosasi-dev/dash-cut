@@ -194,6 +194,12 @@ func draw_guide(ci: CanvasItem, now: int, me: Vector2, to: Vector2) -> void:
 		ci.draw_polyline(PackedVector2Array([c - u * 10.0 + side * 12.0, c + u * 4.0, c - u * 10.0 - side * 12.0]), Color(Kit.C_LINE, a), 4.0, true)
 
 
+# 点の表示の字の大きさ。幅 w に収まらなければ縮める(明朝は広いので、5 体以上の大きい表示が端で切れないように)。
+static func popup_size(f: Font, text: String, size: int, w: float) -> int:
+	var tw := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x + 16.0  # 縁取りの分
+	return size if tw <= w else int(size * w / tw)
+
+
 # 画面の一番上に描く物(場の光・点の表示・縁の赤・終わりの理由)。
 func draw_top(ci: CanvasItem, now: int) -> void:
 	var fa := flash_alpha(now)
@@ -204,9 +210,9 @@ func draw_top(ci: CanvasItem, now: int) -> void:
 	for p: Dictionary in popups:
 		var t := float(now - int(p["at"])) / B.POPUP_MS
 		var pop := 1.0 + B.POP_IN_SCALE * maxf(0.0, 1.0 - float(now - int(p["at"])) / B.POP_IN_MS)
-		var size := int(32 * (B.POPUP_BIG if p["big"] else 1.0) * pop)
-		var y: float = p["y"] - B.POPUP_RISE * t
 		var w := 640.0
+		var size := popup_size(f, p["text"], int(32 * (B.POPUP_BIG if p["big"] else 1.0) * pop), w)
+		var y: float = p["y"] - B.POPUP_RISE * t
 		var x := clampf(p["x"] - w / 2.0, 0.0, B.SCREEN_W - w)
 		var fade := 1.0 if t < 0.6 else 1.0 - (t - 0.6) / 0.4
 		var col: Color = Kit.C_BULLET if p["big"] else (Kit.C_TEXT if int(p["n"]) >= 2 else Color(Kit.C_TEXT, 0.85))

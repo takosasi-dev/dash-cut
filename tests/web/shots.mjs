@@ -84,7 +84,7 @@ try {
 	await page.waitState((s) => s.screen === 'play' && s.play);
 	await sleep(1300);
 	await page.swipe(360, 900, 0, -120);
-	await page.waitState((s) => s.play?.clock_running, 3000);
+	await page.waitState((s) => s.play?.clock, 3000);
 	await page.waitState((s) => s.screen === 'result', 90000);
 	await sleep(1500);
 	await shootAll('s3_result_second', 300);
@@ -104,7 +104,7 @@ try {
 		await page.waitState((s) => s.screen === 'play' && s.play);
 		await sleep(1300);
 		await page.swipe(360, 900, 0, -120);
-		await page.waitState((s) => s.play?.clock_running, 3000);
+		await page.waitState((s) => s.play?.clock, 3000);
 		await page.waitState((s) => s.screen === 'result', 90000);
 		await sleep(400);
 		await shootOne('s3_result_best_stamp');

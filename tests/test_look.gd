@@ -8,11 +8,12 @@ const Store := preload("res://save/save_store.gd")
 const Logo := preload("res://ui/logo.gd")
 
 
-static func kev(pk: int, pressed: bool = true) -> InputEventKey:
+static func kev(pk: int, pressed: bool = true, echo: bool = false) -> InputEventKey:
 	var e := InputEventKey.new()
 	e.pressed = pressed
 	e.physical_keycode = pk as Key
 	e.keycode = pk as Key
+	e.echo = echo
 	return e
 
 
@@ -108,6 +109,24 @@ func test_result_focus_and_lock() -> bool:
 	eq(m.screen, "result", "スペースでは押さない(遊びの連打で進まない)")
 	m._input(kev(KEY_ENTER))
 	eq(m.screen, "play", "Enter でもう1回")
+	_done(m)
+	return true
+
+
+# 遊びで矢印を押したまま終わると、結果に押しっぱなしのリピート(echo)が届く。それで「もう1回」から外れない。
+func test_result_ignores_echo_arrows() -> bool:
+	var m := _main()
+	press(m, "practice")
+	finish(m)
+	m.current._shown_at -= 1000
+	m.current._process(0.0)
+	eq(focus(m), "retry", "もう1回を選んでいる")
+	for k in [KEY_DOWN, KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN]:
+		m._input(kev(k, true, true))
+	eq(focus(m), "retry", "echo の矢印では動かさない")
+	eq(m.screen, "result", "結果のまま")
+	m._input(kev(KEY_DOWN))
+	ok(focus(m) in ["copy", "title"], "押し直した矢印では動く: " + focus(m))
 	_done(m)
 	return true
 

@@ -7,7 +7,8 @@ var buttons: Array[Button] = []
 var sel := 0
 
 
-func _init(list: Array[Button], first: int = 0) -> void:
+# silent のボタンは押しても confirm を鳴らさない(設定の音量は、その音量で斬る音を 1 回だけ鳴らすため)。
+func _init(list: Array[Button], first: int = 0, silent: Array[Button] = []) -> void:
 	buttons = list
 	for b in buttons:
 		b.mouse_entered.connect(func() -> void:
@@ -15,7 +16,8 @@ func _init(list: Array[Button], first: int = 0) -> void:
 			if i != sel and not b.disabled:
 				select(i)
 				Sfx.play("select"))
-		b.pressed.connect(func() -> void: Sfx.play("confirm"))
+		if not silent.has(b):
+			b.pressed.connect(func() -> void: Sfx.play("confirm"))
 	select(first)
 
 
@@ -46,6 +48,8 @@ func key(ev: InputEventKey) -> bool:
 	var dirs := {KEY_UP: Vector2.UP, KEY_DOWN: Vector2.DOWN, KEY_LEFT: Vector2.LEFT, KEY_RIGHT: Vector2.RIGHT}
 	var k := ev.physical_keycode
 	if dirs.has(k):
+		if ev.echo:
+			return true  # 押しっぱなしのリピートでは動かさない(遊びで矢印を押したまま終わっても、もう1回から外れない)
 		var to := nearest(sel, dirs[k])
 		if to >= 0:
 			select(to)
