@@ -1,4 +1,4 @@
-"""効果音 8 個(仕様書 §9.12)を合成して assets/sfx/<名前>.wav に書く。標準ライブラリだけ。
+"""効果音 8 個(仕様書 §9.12)と、画面の選び・決めの 2 個(v0.3.0)を合成して assets/sfx/<名前>.wav に書く。標準ライブラリだけ。
 雑音は決まった式の擬似乱数(xorshift32)で作るので、何度回しても同じバイト列になる。16bit PCM・モノラル・22050 Hz。合計 300 KB 以下(NFR-7)。
 作りは RootCall の tools/gen_sfx.py。
 
@@ -97,6 +97,15 @@ def main():
     for k, f in enumerate([784, 659, 523, 392]):
         tone(b, k * 0.1, 0.3, f, decay=7)  # 終わり
     write("over", b, 0.6)
+    b = []
+    tone(b, 0, 0.05, 1180, 1100, gain=0.7, decay=70)
+    noise(b, 0, 0.012, gain=0.3, decay=200, smooth0=0.3)  # 選びを動かす: 小さな木の音
+    write("select", b, 0.22)
+    b = []
+    noise(b, 0, 0.14, decay=22, smooth0=0.1, smooth1=0.5)
+    tone(b, 0, 0.16, 2350, 2600, gain=0.35, decay=20)
+    tone(b, 0.005, 0.12, 3520, gain=0.15, decay=30)  # 決める: 刃を抜く短い音
+    write("confirm", b, 0.3)
     total = sum(p.stat().st_size for p in OUT.glob("*.wav"))
     print(f"{len(list(OUT.glob('*.wav')))} 個、合計 {total:,} バイト")
 

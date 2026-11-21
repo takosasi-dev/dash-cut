@@ -105,6 +105,18 @@ const CHAIN_LOST_MS := 600  # 切れたつなぎを赤く残す
 const REFILL_MS := 280  # 斬って戻った回数の四角が光る
 const HP_LOST_MS := 320  # 消えた体力の丸が弾ける
 const GUIDE_MS := 900  # 最初の突進の前に出す矢印の 1 周
+# UI の見た目(v0.3.0。画面設計書 §11)。ms。遊びの決まりには使わない
+const WIPE_MS := 260  # 斜めの一太刀の切り替わり
+const ENTER_MS := 200  # 新しい画面が薄く→濃く、横から寄る
+const ENTER_SHIFT := 16.0
+const FADE_MS := 150  # 点滅を弱める 入 の時の切り替わり(薄く→濃くだけ)
+const PAUSE_IN_MS := 150  # 一時停止が出る
+const SLASH_EVERY_MS := 2600  # タイトルの地を走る斬り線の間
+const SLASH_MS := 900
+const LOGO_STROKE_MS := 260  # 題字の払いが引かれる
+const LOGO_SPLIT_MS := 160  # 払いの後、題字の上の片がずれる
+const STAMP_MS := 220  # 新しい記録の判が押される
+const POPUP_TOP_GAP := 104.0  # 点の表示の基線を場の上端からこれより下に(大きい字が 40 px 上っても帯に掛からない)
 
 # 設定(FR-23)
 const VOLUMES := [0, 25, 50, 75, 100]

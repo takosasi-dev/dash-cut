@@ -3,7 +3,7 @@
 # 作りは ParryDuel の audio/sfx.gd(半音ずつ上げる高さの指定つき)。
 extends Node
 
-const NAMES: Array = ["dash", "cut", "shatter", "whiff", "empty", "hurt", "warn", "over"]
+const NAMES: Array = ["dash", "cut", "shatter", "whiff", "empty", "hurt", "warn", "over", "select", "confirm"]  # 後ろの 2 つは画面の選び・決め(v0.3.0)
 # 同時に鳴らせる数。1 つのプレイヤーで重ねると、高さを変えた時に鳴っている音まで動くので分けて持つ
 const VOICES := 8
 

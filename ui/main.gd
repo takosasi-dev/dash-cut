@@ -1,5 +1,7 @@
 # 画面の切り替え(S1〜S5)・キーの振り分け・保存・自動の一時停止を受け持つ。ゲームの決まりは持たない(INV-1)。
 # 払う操作は ui/play.gd が _unhandled_input で受ける(ボタンを押した操作は突進にしない)。
+# 画面の切り替わり(v0.3.0、画面設計書 §11)は見た目だけ: 論理の画面はすぐ替わり、新しい画面は最初から押せる。斜めの一太刀(ui/wipe.gd)と
+# 薄く→濃く・横から寄る動きを Time の ms で付ける。「もう1回」「やり直す」は動きを付けない。点滅を弱める 入 では薄く→濃くだけ。
 # ?debug=1(または --debug)で window.dcState に状態を出す。--auto は窓なしの確かめ用(タイトル → プレイ → 結果 → もう1回 を自動で通す)。
 extends Node
 
@@ -15,6 +17,8 @@ const Title := preload("res://ui/title.gd")
 const Result := preload("res://ui/result.gd")
 const Settings := preload("res://ui/settings.gd")
 const Pause := preload("res://ui/pause.gd")
+const Wipe := preload("res://ui/wipe.gd")
+const Backdrop := preload("res://ui/backdrop.gd")
 
 var stage: Control
 var store: Store
@@ -33,6 +37,13 @@ var _last_frame := 0
 var _settings_overlay: Control = null
 var _auto_frame := 0
 var _auto_rounds := 0
+var backdrop: Backdrop
+var wipe: Wipe
+var _enter_node: Control = null  # 入りの動きの途中の画面
+var _enter_at := -100000
+var _enter_ms := 0
+var _enter_from := 0.0  # 入りの始めの濃さ
+var _enter_shift := 0.0
 
 
 func _ready() -> void:
@@ -44,6 +55,10 @@ func _ready() -> void:
 	bg.color = Kit.C_BG
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(Kit.place(bg, -4000, -4000, B.SCREEN_W + 8000, B.SCREEN_H + 8000))
+	backdrop = Backdrop.new()
+	stage.add_child(backdrop)
+	wipe = Wipe.new()
+	stage.add_child(wipe)
 	store = Store.new()
 	Sfx.set_volume(int(store.settings()["volume"]))
 	debug = _flag("debug")
@@ -62,6 +77,48 @@ func _ready() -> void:
 func _center() -> void:
 	var r := get_viewport().get_visible_rect()
 	stage.position = (r.position + (r.size - Vector2(B.SCREEN_W, B.SCREEN_H)) / 2.0).round()
+	var view := Rect2(r.position - stage.position, r.size)  # 見えている範囲(舞台の座標)
+	backdrop.view = view
+	wipe.view = view
+
+
+func _reduce() -> bool:
+	return bool(store.settings()["reduce_flash"])
+
+
+# 新しい画面を舞台に置き、current にする。motion: "wipe"(斜めの一太刀と入り)/ "fade"(入りだけ)/ "none"。
+func _show(node: Control, motion: String) -> void:
+	stage.add_child(node)
+	stage.move_child(wipe, -1)
+	current = node
+	_enter_node = null
+	if motion == "none":
+		return
+	var reduce := _reduce()
+	_enter_node = node
+	_enter_at = Time.get_ticks_msec()
+	_enter_ms = B.FADE_MS if reduce else B.ENTER_MS
+	_enter_from = 0.0 if motion == "wipe" or reduce else 0.45
+	_enter_shift = 0.0 if reduce else B.ENTER_SHIFT
+	_step_enter()
+	if motion == "wipe" and not reduce:
+		wipe.run()
+
+
+func _step_enter() -> void:
+	if _enter_node == null or not is_instance_valid(_enter_node):
+		_enter_node = null
+		return
+	var k := Kit.ease_out(float(Time.get_ticks_msec() - _enter_at) / _enter_ms)
+	_enter_node.modulate.a = lerpf(_enter_from, 1.0, k)
+	_enter_node.position.x = _enter_shift * (1.0 - k)
+	if k >= 1.0:
+		_enter_node = null
+
+
+# 入りの動きか斜めの一太刀が走っている間は真(撮る時に待つ)。
+func moving() -> bool:
+	return _enter_node != null or wipe.running()
 
 
 static func _flag(flag: String) -> bool:
@@ -78,7 +135,7 @@ func _clear() -> void:
 	if _settings_overlay != null:
 		_settings_overlay = null
 	for c in stage.get_children():
-		if c.get_index() == 0:
+		if c.get_index() == 0 or c == backdrop or c == wipe:
 			continue
 		c.queue_free()
 	current = null
@@ -108,10 +165,16 @@ func _show_title() -> void:
 	screen = "title"
 	var d := _today()
 	var t := Title.new()
-	t.build(store, d["day"], d["date"])
+	t.build(store, d["day"], d["date"], _reduce())
 	t.chosen.connect(_on_title)
-	stage.add_child(t)
-	current = t
+	_backdrop(true)
+	_show(t, "wipe")
+
+
+func _backdrop(slashes: bool) -> void:
+	backdrop.visible = true
+	backdrop.slashes = slashes
+	backdrop.reduce_flash = _reduce()
 
 
 func _on_title(what: String) -> void:
@@ -120,11 +183,11 @@ func _on_title(what: String) -> void:
 			_show_settings("title")
 		"daily":
 			var d := _today()
-			_start({"mode": Sim.MODE_DAILY, "seed": Day.day_seed(d["day"]), "day": d["day"], "date": d["date"]})
+			_start({"mode": Sim.MODE_DAILY, "seed": Day.day_seed(d["day"]), "day": d["day"], "date": d["date"]}, "wipe")
 		"practice":
 			var d2 := _today()
 			var s := Time.get_ticks_usec() & 0xFFFFFFFF
-			_start({"mode": Sim.MODE_PRACTICE, "seed": s if s != 0 else 1, "day": d2["day"], "date": d2["date"]})
+			_start({"mode": Sim.MODE_PRACTICE, "seed": s if s != 0 else 1, "day": d2["day"], "date": d2["date"]}, "wipe")
 
 
 # 端末の今日の日付。始めた時の日付で回を決める(E-12)。
@@ -138,7 +201,8 @@ func _today() -> Dictionary:
 
 # --- S2 プレイ ---
 
-func _start(r: Dictionary) -> void:
+# motion: タイトルからは "wipe"。もう1回・やり直すは "none"(押してすぐ遊べるように動きを付けない)。
+func _start(r: Dictionary, motion: String = "none") -> void:
 	_clear()
 	run = r
 	screen = "play"
@@ -146,11 +210,11 @@ func _start(r: Dictionary) -> void:
 	var st: Dictionary = store.settings()
 	play.shake_on = st["shake"]
 	play.reduce_flash = st["reduce_flash"]
-	stage.add_child(play)
+	backdrop.visible = false
+	_show(play, motion)
 	play.start(int(r["mode"]), int(r["seed"]))
 	play.finished.connect(_on_finished)
 	play.pause_requested.connect(_pause)
-	current = play
 
 
 func _pause() -> void:
@@ -161,6 +225,7 @@ func _pause() -> void:
 	pause_view.build()
 	pause_view.picked.connect(_on_pause)
 	stage.add_child(pause_view)
+	stage.move_child(wipe, -1)
 
 
 func _on_pause(what: String) -> void:
@@ -202,11 +267,11 @@ func _on_finished(result: Dictionary) -> void:
 	_clear()
 	screen = "result"
 	var r := Result.new()
-	r.build(result, rec, text)
+	r.build(result, rec, text, _reduce())
 	r.retry.connect(func() -> void: _start(run))  # FR-19: 同じ入口。今日の並びは同じ種
 	r.to_title.connect(_show_title)
-	stage.add_child(r)
-	current = r
+	_backdrop(false)
+	_show(r, "fade")  # 「もう1回」の選びの印が幕に隠れないように、幕は使わない
 	if auto:
 		print("SMOKE result %s" % JSON.stringify(result))
 
@@ -224,15 +289,14 @@ func _show_settings(from: String) -> void:
 		dim.color = Color(Kit.C_BG, 0.97)
 		s.add_child(Kit.place(dim, -4000, -4000, B.SCREEN_W + 8000, B.SCREEN_H + 8000))
 		s.move_child(dim, 0)
-		stage.add_child(s)
 		_settings_overlay = s
 		screen = "settings"
-		current = s
+		_show(s, "fade")
 	else:
 		_clear()
 		screen = "settings"
-		stage.add_child(s)
-		current = s
+		_backdrop(false)
+		_show(s, "wipe")
 
 
 func _settings_back(s: Control) -> void:
@@ -245,6 +309,7 @@ func _settings_back(s: Control) -> void:
 		s.queue_free()
 		_settings_overlay = null
 		pause_view.visible = true
+		pause_view.menu.select(2)  # 設定のボタンに選びを戻す
 		current = play
 		screen = "play"
 	else:
@@ -267,15 +332,19 @@ func _after_draw() -> void:
 
 
 func state() -> Dictionary:
-	var out := {"screen": screen, "paused": pause_view != null, "buttons": {}, "sfx": Sfx.played, "unlocked": Sfx.unlocked,
+	var out := {"screen": screen, "paused": pause_view != null, "buttons": {}, "focus": "", "moving": moving(), "sfx": Sfx.played, "unlocked": Sfx.unlocked,
 		"save_failed": store.write_failed, "load_failed": store.load_failed, "lat": _pct(lat_ms), "frame": _pct(frame_ms)}
 	var root: Control = pause_view if pause_view != null and pause_view.visible else current
 	if root != null:
 		for b in root.find_children("*", "Button", true, false):
 			var btn := b as Button
 			if btn.is_visible_in_tree() and not btn.disabled:
-				var c := btn.global_position - stage.global_position + btn.size / 2  # 720×1280 の中の位置
+				# 720×1280 の中の位置。入りの動きで画面がずれていても、止まった時の位置を出す
+				var c := root.get_global_transform().affine_inverse() * btn.global_position + btn.size / 2
 				out["buttons"][String(btn.name)] = [c.x, c.y]
+		var f := get_viewport().gui_get_focus_owner()
+		if f != null and root.is_ancestor_of(f):
+			out["focus"] = String(f.name)
 	if play != null and play.sim != null:
 		var s := play.sim.snapshot()
 		out["play"] = {"x": s["x"], "y": s["y"], "tick": s["tick"], "time_left": s["time_left"], "points": s["points"],
@@ -294,6 +363,7 @@ static func _pct(list: Array) -> Dictionary:
 
 
 func _process(_delta: float) -> void:
+	_step_enter()
 	if auto:
 		_auto_step()  # 窓なしでは frame_post_draw が来ないので、ここで回す
 

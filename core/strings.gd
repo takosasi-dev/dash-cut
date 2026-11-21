@@ -3,7 +3,7 @@
 extends RefCounted
 
 const NAME := "DashCut"
-const VERSION := "v0.2.0"
+const VERSION := "v0.3.0"
 const URL := "https://takosasi-dev.github.io/dash-cut/"
 
 # S1 タイトル
@@ -20,9 +20,8 @@ const LOAD_FAILED := "保存を読めなかったので、記録を初めから�
 # S2 プレイ
 const HINT := "払うと突進"
 const HINT_KEYS := "キーボードなら 矢印で向き、スペースで突進"
-const HUD_TIME := "残り %s"
+const HUD_TIME_CAP := "残り"  # 数は明朝で下に描く
 const HUD_HP := "体力"
-const HUD_POINTS := "%s点"
 const HUD_CHAIN := "つなぎ %d  x%s"
 const HUD_CHARGE := "突進"
 const POP := "%d体 x%s +%s"
@@ -31,12 +30,12 @@ const PAUSE_MARK := "II"
 # S3 結果
 const REASON_TIME := "時間切れ"
 const REASON_HP := "体力切れ"
-const RES_POINTS := "%s点"
+const RES_UNIT := "点"  # 点の数の後ろに小さく(数は明朝で描く)
 const RES_NEW_BEST := "最高 +%s(新しい記録)"
 const RES_TO_BEST := "最高まで −%s"
-const RES_CUTS := "斬った数 %d"
-const RES_MAX_N := "最大同時 %d"
-const RES_MAX_CHAIN := "最大つなぎ %d"
+const RES_CUTS := "斬った数"
+const RES_MAX_N := "最大同時"
+const RES_MAX_CHAIN := "最大つなぎ"
 const B_RETRY := "もう1回"
 const B_COPY := "コピー"
 const B_TITLE := "タイトルへ"
@@ -63,3 +62,11 @@ const B_BACK := "戻る"
 const PAUSE := "一時停止"
 const B_RESUME := "続ける"
 const B_RESTART := "やり直す"
+
+# 題字と判(表示用の字体で描く。tools/subset_font.py が明朝の部分集合に入れる)
+const SEAL := "斬"
+const STAMP_BEST := "新記録"
+
+# キーの手がかり(v0.3.0)
+const KEY_SELECT := "選ぶ"
+const KEY_OK := "決める"

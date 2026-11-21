@@ -14,6 +14,7 @@ try {
 	expect(page.booted, `Godot が起動した(${page.bootMs} ms)`);
 	const t = await page.waitState((s) => s.screen === 'title', 60000);
 	expect(!!t, `タイトルが出る(ページを開いてから ${Date.now() - page.t0} ms)`);
+	expect(t?.focus === 'daily', `タイトルは今日の並びを選んでいる(focus: ${t?.focus})`);
 	const loadedAt = Date.now();
 	expect(await page.clickButton('daily'), 'マウスで「今日の並び」を押せる');
 	const p0 = await page.waitState((s) => s.screen === 'play' && s.play);
@@ -62,6 +63,7 @@ try {
 		// 最後まで遊ぶ(マウスだけ)
 		const res = await playUntil(page, (s) => s.screen === 'result', { timeoutMs: 150000 });
 		expect(!!res, '結果の画面まで行く');
+		expect(res?.focus === 'retry', `結果は入った時からもう1回を選んでいる(focus: ${res?.focus})`);
 		await sleep(400);
 		const saved = await page.saved();
 		expect(saved?.daily?.first > 0, `保存が dash-cut/save に入る: ${JSON.stringify(saved)}`);
@@ -72,8 +74,18 @@ try {
 		const clip = await page.evaluate('navigator.clipboard.readText().catch((e) => "(読めない: " + e + ")")');
 		expect(String(clip).startsWith('DashCut '), `コピーのボタン: ${JSON.stringify(clip).slice(0, 70)}`);
 		await sleep(300);
+		await page.waitState((s) => s.buttons?.retry, 3000);
+		const r0 = Date.now();
 		expect(await page.clickButton('retry'), 'マウスで「もう1回」を押せる');
-		expect(!!(await page.waitState((s) => s.screen === 'play' && s.play?.time_left === 7200, 3000)), 'もう1回で同じ入口の初めから');
+		expect(!!(await page.waitState((s) => s.screen === 'play' && s.play?.time_left === 7200, 3000)), `もう1回で同じ入口の初めから(${Date.now() - r0} ms。30 ms 刻みの目安)`);
+		// キーだけ: Esc → ↓ → Enter(やり直す)→ もう一度 Esc → R
+		await page.key('Escape');
+		await page.waitState((s) => s.paused, 3000);
+		await page.key('ArrowDown');
+		const fp = await page.waitState((s) => s.focus === 'restart', 2000);
+		expect(!!fp, '一時停止で ↓ を押すと「やり直す」を選ぶ');
+		await page.key('Enter');
+		expect(!!(await page.waitState((s) => !s.paused && s.play?.time_left === 7200, 3000)), 'Enter で選んだ「やり直す」');
 		// 読み込みの後、開き直すまでの通信は 0 件(AC-22。3 分見る)
 		await sleep(Math.max(0, loadedAt + 181000 - Date.now()));
 		const reloadAt = Date.now();

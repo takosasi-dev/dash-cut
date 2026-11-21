@@ -70,7 +70,8 @@ func test_fx_popups_do_not_overlap() -> bool:
 	ok(absf(ys[0] - ys[1]) >= B.POPUP_GAP - 0.01 and absf(ys[1] - ys[2]) >= B.POPUP_GAP - 0.01 and absf(ys[0] - ys[2]) >= B.POPUP_GAP - 0.01, "同じ所の点の表示は上へずらす: %s" % [ys])
 	var fx2 := Fx.new()
 	fx2.on_event({"type": "dash_end", "n": 1, "points": 100, "mult10": 10, "chain": 1, "x": 360.0, "y": 214.0}, 0)
-	ok(fx2.popups[0]["y"] >= B.FIELD_Y0 + 40.0, "上の表示に重ねない")
+	var top: float = fx2.popups[0]["y"] - B.POPUP_RISE - 32.0 * B.POPUP_BIG * (1.0 + B.POP_IN_SCALE) * 0.8  # 上りきった時の大きい字の上の端
+	ok(top >= B.FIELD_Y0, "上りきっても HUD の帯に重ねない: %s" % top)
 	return true
 
 

@@ -43,20 +43,16 @@ func _ready() -> void:
 	field.fx = fx
 	field.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(Kit.place(field, 0, 0, B.SCREEN_W, B.SCREEN_H))
-	_pause_btn = Kit.place(Kit.button("pause", S.PAUSE_MARK, 32), 24, 24, 88, 88)
+	_pause_btn = Kit.place(Kit.button("pause", S.PAUSE_MARK, 28), 28, 28, 80, 80)
+	_pause_btn.focus_mode = Control.FOCUS_NONE  # 遊びの間はキーで選ばない(Esc で止める)
 	_pause_btn.pressed.connect(func() -> void: pause_requested.emit())
 	add_child(_pause_btn)
-	_l["time"] = Kit.place(Kit.label("", 44, Kit.C_TEXT, 800), 160, 24, 400, 88)
-	_l["hp"] = Kit.place(Kit.label(S.HUD_HP, 22, Kit.C_DIM, 500), 500, 48, 80, 40)
-	_l["points"] = Kit.place(Kit.label("", 34, Kit.C_TEXT, 800), 24, 130, 340, 56)
-	_l["points"].horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_l["points"].pivot_offset = Vector2(0, 28)  # 点が入った時に跳ねる中心
-	_l["chain"] = Kit.place(Kit.label("", 30, Kit.C_TEXT, 700), 360, 130, 336, 56)
-	_l["chain"].horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_l["chain"].pivot_offset = Vector2(336, 28)
-	_l["hint"] = Kit.place(Kit.label(S.HINT, 36, Color(Kit.C_TEXT, 0.75), 700), 0, 1050, B.SCREEN_W, 60)
+	# 残り時間・点・つなぎ・体力の丸・回数の四角は field が描く(明朝の数字を 1 桁ずつ同じ幅で)。ここは日本語の見出しだけ
+	_l["time_cap"] = Kit.place(Kit.label(S.HUD_TIME_CAP, 20, Kit.C_DIM, 500), 260, 22, 200, 30)
+	_l["hp"] = Kit.place(Kit.label(S.HUD_HP, 20, Kit.C_DIM, 500), 578, 22, 132, 30)
+	_l["hint"] = Kit.place(Kit.label(S.HINT, 36, Color(Kit.C_TEXT, 0.8), 700), 0, 1050, B.SCREEN_W, 60)
 	_l["keys"] = Kit.place(Kit.label(S.HINT_KEYS, 22, Kit.C_DIM, 500), 0, 1106, B.SCREEN_W, 36)
-	_l["charge"] = Kit.place(Kit.label(S.HUD_CHARGE, 26, Kit.C_DIM, 500), 200, 1200, 100, 44)
+	_l["charge"] = Kit.place(Kit.label(S.HUD_CHARGE, 24, Kit.C_DIM, 500), 196, 1200, 100, 44)
 	for k: String in _l:
 		add_child(_l[k])
 
@@ -232,19 +228,8 @@ func _refresh() -> void:
 	var now := Time.get_ticks_msec()
 	var s := sim.snapshot()
 	fx.update(now, int(s["freeze_left"]))
-	var t: int = s["time_left"]
 	var running: bool = s["clock_running"]
-	var tl: Label = _l["time"]
-	tl.text = S.HUD_TIME % Score.sec1(t)
-	var last := t <= B.CLOCK_BIG_SEC * B.TICK_HZ
-	tl.add_theme_color_override("font_color", (Kit.C_DANGER if last else Kit.C_TEXT) if running else Color(Kit.C_DIM, 0.6))
-	tl.add_theme_font_size_override("font_size", int(44 * (B.CLOCK_BIG if last else 1.0)))
-	_l["points"].text = S.HUD_POINTS % Score.comma(int(s["points"]))
-	_l["points"].scale = Vector2.ONE * Fx.bump(now, fx.points_bump_at)
-	var chain: int = s["chain"]
-	fx.on_chain(chain, now)
-	_l["chain"].text = S.HUD_CHAIN % [chain, Score.mult_text(Score.mult10(chain))] if chain > 0 else ""
-	_l["chain"].scale = Vector2.ONE * Fx.bump(now, fx.chain_bump_at)
+	fx.on_chain(int(s["chain"]), now)
 	_l["hint"].visible = not running
 	_l["keys"].visible = not running
 	var a := aim_vec()

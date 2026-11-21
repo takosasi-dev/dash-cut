@@ -77,7 +77,7 @@ func _add_popup(text: String, x: float, y: float, now: int, n: int) -> void:
 			if absf(float(p["x"]) - x) < 280.0 and absf(py - y) < B.POPUP_GAP:
 				y = py - B.POPUP_GAP
 				moved = true
-	y = maxf(y, B.FIELD_Y0 + 40.0)  # 上の表示(点・つなぎ)に重ねない
+	y = maxf(y, B.FIELD_Y0 + B.POPUP_TOP_GAP)  # 上りきっても字の上の端が HUD の帯に掛からない(v0.3.0 で 40 から)
 	popups.append({"text": text, "x": x, "y": y, "at": now, "big": n >= B.BIG_CUT, "n": n})
 
 
@@ -199,7 +199,8 @@ func draw_top(ci: CanvasItem, now: int) -> void:
 	var fa := flash_alpha(now)
 	if fa > 0.0:
 		ci.draw_rect(Rect2(B.FIELD_X0, B.FIELD_Y0, B.FIELD_X1 - B.FIELD_X0, B.FIELD_Y1 - B.FIELD_Y0), Color(1, 1, 1, fa))
-	var f := Kit.font(800)
+	var f := Kit.num_font()  # 数は HUD と同じ明朝(「体」は Noto へ落ちる)
+	var fo := Kit.font(800)
 	for p: Dictionary in popups:
 		var t := float(now - int(p["at"])) / B.POPUP_MS
 		var pop := 1.0 + B.POP_IN_SCALE * maxf(0.0, 1.0 - float(now - int(p["at"])) / B.POP_IN_MS)
@@ -220,5 +221,5 @@ func draw_top(ci: CanvasItem, now: int) -> void:
 		var ot := clampf(float(now - int(over["at"])) / B.OVER_MS, 0.0, 1.0)
 		ci.draw_rect(Rect2(B.FIELD_X0, B.FIELD_Y0, B.FIELD_X1 - B.FIELD_X0, B.FIELD_Y1 - B.FIELD_Y0), Color(Kit.C_BG, 0.55 * ot))
 		var fs := int(64 * (1.15 - 0.15 * ot))
-		ci.draw_string_outline(f, Vector2(0, 660), over["text"], HORIZONTAL_ALIGNMENT_CENTER, B.SCREEN_W, fs, 10, Color(Kit.C_BG, ot))
-		ci.draw_string(f, Vector2(0, 660), over["text"], HORIZONTAL_ALIGNMENT_CENTER, B.SCREEN_W, fs, Color(Kit.C_TEXT, ot))
+		ci.draw_string_outline(fo, Vector2(0, 660), over["text"], HORIZONTAL_ALIGNMENT_CENTER, B.SCREEN_W, fs, 10, Color(Kit.C_BG, ot))
+		ci.draw_string(fo, Vector2(0, 660), over["text"], HORIZONTAL_ALIGNMENT_CENTER, B.SCREEN_W, fs, Color(Kit.C_TEXT, ot))
